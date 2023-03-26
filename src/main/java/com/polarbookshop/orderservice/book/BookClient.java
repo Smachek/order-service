@@ -1,16 +1,21 @@
 package com.polarbookshop.orderservice.book;
 
+import com.polarbookshop.orderservice.config.ClientProperties;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
+
+import java.time.Duration;
 
 @Component
 public class BookClient {
     private static final String BOOKS_ROOT_API = "/books/";
     private final WebClient webClient;
+    private final ClientProperties clientProperties;
 
-    public BookClient(WebClient webClient) {
+    public BookClient(WebClient webClient, ClientProperties clientProperties) {
         this.webClient = webClient;
+        this.clientProperties = clientProperties;
     }
 
     public Mono<Book> getBookByIsbn(String isbn) {
@@ -18,6 +23,7 @@ public class BookClient {
                 .get()
                 .uri(BOOKS_ROOT_API + isbn)
                 .retrieve()
-                .bodyToMono(Book.class);
+                .bodyToMono(Book.class)
+                .timeout(Duration.ofSeconds(clientProperties.catalogServiceTimeout()), Mono.empty());
     }
 }

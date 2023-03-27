@@ -1,6 +1,5 @@
 package com.polarbookshop.orderservice.book;
 
-import com.polarbookshop.orderservice.config.ClientProperties;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
@@ -13,11 +12,11 @@ import java.time.Duration;
 public class BookClient {
     private static final String BOOKS_ROOT_API = "/books/";
     private final WebClient webClient;
-    private final ClientProperties clientProperties;
+    private final Long catalogServiceTimeout;
 
-    public BookClient(WebClient webClient, ClientProperties clientProperties) {
+    public BookClient(WebClient webClient) {
         this.webClient = webClient;
-        this.clientProperties = clientProperties;
+        catalogServiceTimeout = 3L;
     }
 
     public Mono<Book> getBookByIsbn(String isbn) {
@@ -26,7 +25,7 @@ public class BookClient {
                 .uri(BOOKS_ROOT_API + isbn)
                 .retrieve()
                 .bodyToMono(Book.class)
-                .timeout(Duration.ofSeconds(clientProperties.catalogServiceTimeout()), Mono.empty())
+                .timeout(Duration.ofSeconds(catalogServiceTimeout), Mono.empty())
                 .onErrorResume(WebClientResponseException.NotFound.class, exception -> Mono.empty())
                 .retryWhen(Retry.backoff(3, Duration.ofMillis(100)))
                 .onErrorResume(Exception.class, exception -> Mono.empty());
